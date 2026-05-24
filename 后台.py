@@ -189,9 +189,9 @@ def handle_file(target_client, addr):
                 continue
             file_path = path + parts[1]
             target_client.send(f"get {file_path}".encode())
-            # 接收文件大小
+            # 接收文件大小（-1 表示客户端读取失败）
             file_size = int(recv_exact(target_client, 8).decode())
-            if file_size == 0:
+            if file_size < 0:
                 print(f"[-] {addr} 的 {file_path} 文件不存在或无法读取")
                 continue
             print(f"[{addr}] {file_path} 文件大小：{file_size} 字节")

