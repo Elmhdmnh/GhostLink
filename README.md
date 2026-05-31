@@ -14,6 +14,7 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 - **Camera Monitor / 摄像头监控** — Remotely open client camera with live video feed / 远程开启客户端摄像头，实时回传画面
 - **File Manager / 文件管理** — Browse directories, download & delete files on client / 浏览客户端磁盘目录，下载和删除文件
 - **File Information / 文件信息** — Retrieve 40+ metadata fields including SHA256 hash, owner, ADS streams, version info, icon, MIME type / 获取 40+ 项文件元数据：SHA256 哈希、所有者、ADS 数据流、版本信息、图标、MIME 类型等
+- **Keylogger / 键盘记录** — Background keystroke capture with pynput, retrievable on demand / 后台静默记录按键（基于 pynput），按需回传
 - **Multi-Client / 多客户端管理** — Manage multiple connected clients, switch by index number / 支持同时连接多个客户端，通过编号切换
 - **Resizable Window / 可调整窗口** — Monitor windows support free resizing / 监控窗口支持自由缩放
 - **Auto Reconnect / 自动重连** — Client automatically reconnects after disconnection / 客户端断线后自动重连
@@ -30,6 +31,7 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 │  │ Control│  │                  │  │Screen Module │  │
 │  │ Display│  │ 8-byte len+data  │  │Camera Module │  │
 │  │        │◄─┼─────────────────│  │ File Module  │  │
+│  │        │  │                  │  │Keylog Module │  │
 │  └────────┘  │                  │  └─────────────┘  │
 └──────────────┘                  └──────────────────┘
 ```
@@ -38,9 +40,9 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 
 | Step | Direction | Content | Description |
 | ---- | --------- | ------- | ----------- |
-| 1 | Server → Client | `1` / `2` / `3` / `4` | 1-byte mode code: Shell / Screen / Camera / File |
+| 1 | Server → Client | `1` / `2` / `3` / `4` / `5` | 1-byte mode code: Shell / Screen / Camera / File / Keylogger |
 | 2 | Server ↔ Client | Command string | Interactive commands (`get` for frame, `stop` to end, Shell commands, `look`/`get`/`delete`/`information` for files, etc.) |
-| 3 | Client → Server | `8-byte length header + data body` | Command output, JPEG image data, or pickled file list |
+| 3 | Client → Server | `8-byte length header + data body` | Command output, JPEG image data, pickled file list, or keylog text |
 
 ## Requirements / 环境要求
 
@@ -80,6 +82,7 @@ shell <number>     - Send Shell command to client
 screen <number>    - Start screen monitoring
 camera <number>    - Open client camera
 file   <number>    - Browse client file system
+keylog <number>    - Retrieve keylogger data
 quit               - Exit
 Enter command:
 ```
@@ -109,6 +112,9 @@ camera 1
 
 # File manager (type 0 to exit) / 文件管理 (输入 0 退出)
 file 1
+
+# Retrieve keylogger data / 获取键盘记录
+keylog 1
 ```
 
 #### File Manager Commands / 文件管理命令
@@ -145,6 +151,7 @@ file 1
 | `2` | Screen | `get` to capture one frame / `stop` to end |
 | `3` | Camera | `get` to capture one frame / `stop` to end |
 | `4` | File | `look <path>` list dir / `get <path>` download / `delete <path>` remove / `information <path>` metadata / `0` exit |
+| `5` | Keylogger | One-shot: retrieves recent keylog buffer (up to 500 entries), then clears / 一次性回传最近按键记录（最多500条）并清空缓冲区 |
 
 ### File Module Protocol / 文件管理协议
 
@@ -162,6 +169,17 @@ Server ──► Client:  "information C:\app.exe"    (查询文件详细信息)
 Server ◄── Client:  "00001234<info_text>"       (8字节长度头 + 文件元数据文本)
 Server ──► Client:  "0"                         (退出文件管理模式)
 ```
+
+### Keylogger Protocol / 键盘记录协议
+
+```text
+Server ──► Client:  "5"                         (请求键盘记录)
+Server ◄── Client:  "00001234<keylog_text>"     (8字节长度头 + UTF-8 按键记录文本)
+```
+
+> Keylogger runs as a background daemon thread on the client. Keystrokes are buffered in memory.  
+> Special keys are recorded as `[enter]`, `[shift]`, `[ctrl]`, etc.
+> 键盘记录以后台守护线程运行，按键缓冲在内存中。特殊按键以 `[enter]`、`[shift]`、`[ctrl]` 等格式记录。
 
 ### File Information Fields / 文件信息字段
 

