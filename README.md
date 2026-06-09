@@ -129,6 +129,7 @@ keylog 1
 | `get <filename>` | `get secret.txt` | Download file to local / 下载文件到本地 |
 | `delete <filename>` | `delete log.txt` | Delete file on client / 删除客户端文件 |
 | `information <filename>` | `information setup.exe` | Show detailed file metadata (40+ fields) / 显示文件详细元数据（40+ 项） |
+| `send <filename>` | `send payload.exe` | Upload file from server to client / 从服务端上传文件到客户端 |
 | `0` | `0` | Return to main menu / 返回主菜单 |
 
 ## Project Structure / 项目结构
@@ -167,6 +168,14 @@ Server ◄── Client:  <file_bytes>               (文件原始字节)
 Server ──► Client:  "delete C:\log.txt"         (删除文件)
 Server ──► Client:  "information C:\app.exe"    (查询文件详细信息)
 Server ◄── Client:  "00001234<info_text>"       (8字节长度头 + 文件元数据文本)
+Server ──► Client:  "send C:\"                  (上传文件到客户端目录)
+Server ◄── Client:  "READY"                     (客户端就绪)
+Server ──► Client:  "00000012payload.exe"       (8字节文件名长度 + 文件名)
+Server ◄── Client:  "OK"                        (确认文件名)
+Server ──► Client:  "00001024"                  (8字节文件大小)
+Server ◄── Client:  "OK"                        (确认接收)
+Server ──► Client:  <file_bytes>               (文件原始字节)
+Server ◄── Client:  "SUCCESS"                   (接收完成)
 Server ──► Client:  "0"                         (退出文件管理模式)
 ```
 
