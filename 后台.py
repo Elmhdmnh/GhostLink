@@ -18,6 +18,8 @@ import numpy as np
 import pickle
 import tkinter
 from tkinter import filedialog
+import json
+import requests
 
 # ============================================================================
 # 第一部分：服务端初始化
