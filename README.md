@@ -1,7 +1,7 @@
-# GhostLink — 远程管理工具包
+# Remote Admin Toolkit (RAT) / 远程管理工具 / 木马病毒
 
-A lightweight Python-based remote administration toolkit (RAT) with Shell command execution, real-time screen monitoring, camera capture, file system management, keylogging, file upload, task manager disable, and AMSI bypass.
-基于 Python 的轻量级远程管理工具包，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录、文件上传、任务管理器禁用以及 AMSI 绕过。
+A lightweight Python-based remote administration toolkit with Shell command execution, real-time screen monitoring, camera capture, file system management, keylogging, file upload, task manager disable, and AMSI bypass.
+基于 Python 的轻量级远程管理工具，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录、文件上传、任务管理器禁用以及 AMSI 绕过。
 
 > ⚠️ **Disclaimer / 免责声明**: This project is for security research and educational purposes only. Do not use for unauthorized access. Users must comply with local laws and assume all responsibility.
 > 本项目仅供安全研究和教育用途，请勿用于未经授权的访问。使用者需遵守当地法律法规，自行承担所有责任。
