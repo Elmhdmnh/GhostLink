@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "C++ GCC 编译",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-Command",
+                "cd \"${workspaceFolder}\"; & \"C:/msys64/ucrt64/bin/g++.exe\" -fdiagnostics-color=always -g -std=c++17 \"${fileBasename}\" -o \"${fileBasenameNoExtension}.exe\""
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            },
+            "detail": "编译当前 .cpp 文件 (g++ C++17, 含 GLFW/GLEW/OpenGL)"
+        }
+    ]
+}

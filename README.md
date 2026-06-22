@@ -1,10 +1,14 @@
 # Remote Admin Toolkit (RAT) / 远程管理工具 / 木马病毒
 
-A lightweight Python-based remote administration toolkit with Shell command execution, real-time screen monitoring, camera capture, and file system management.
-基于 Python 的轻量级远程管理工具，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集和文件系统管理。
+A lightweight Python-based remote administration toolkit with Shell command execution, real-time screen monitoring, camera capture, file system management, keylogging, and file upload.
+基于 Python 的轻量级远程管理工具，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录以及文件上传。
 
 > ⚠️ **Disclaimer / 免责声明**: This project is for security research and educational purposes only. Do not use for unauthorized access. Users must comply with local laws and assume all responsibility.
 > 本项目仅供安全研究和教育用途，请勿用于未经授权的访问。使用者需遵守当地法律法规，自行承担所有责任。
+
+📖 **完整文档**: 见 [wiki](wiki/) 目录或 [GhostLink Wiki](GhostLink.wiki/)
+
+---
 
 ## Features / 功能特性
 
@@ -12,10 +16,12 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 - **Remote Shell / 远程 Shell** — Execute arbitrary commands on client, supports `cd` directory switching / 在服务端对客户端执行任意命令，支持 `cd` 目录切换
 - **Screen Monitor / 屏幕监控** — Real-time client screen capture, in-memory processing (no disk writes) / 实时获取客户端屏幕截图，内存处理不落盘
 - **Camera Monitor / 摄像头监控** — Remotely open client camera with live video feed / 远程开启客户端摄像头，实时回传画面
-- **File Manager / 文件管理** — Browse directories, download & delete files on client / 浏览客户端磁盘目录，下载和删除文件
+- **File Manager / 文件管理** — Browse directories, download, upload & delete files on client / 浏览客户端磁盘目录，下载、上传和删除文件
 - **File Information / 文件信息** — Retrieve 40+ metadata fields including SHA256 hash, owner, ADS streams, version info, icon, MIME type / 获取 40+ 项文件元数据：SHA256 哈希、所有者、ADS 数据流、版本信息、图标、MIME 类型等
+- **File Upload / 文件上传** — Upload files from server to client via `send` command / 通过 `send` 命令从服务端上传文件到客户端
 - **Keylogger / 键盘记录** — Background keystroke capture with pynput, retrievable on demand / 后台静默记录按键（基于 pynput），按需回传
 - **Multi-Client / 多客户端管理** — Manage multiple connected clients, switch by index number / 支持同时连接多个客户端，通过编号切换
+- **AMS Bypass / AMSI 绕过** — C++ utility to disable Windows AMSI via registry (`KillAMSI.cpp`) / C++ 工具通过注册表禁用 Windows AMSI
 - **Resizable Window / 可调整窗口** — Monitor windows support free resizing / 监控窗口支持自由缩放
 - **Auto Reconnect / 自动重连** — Client automatically reconnects after disconnection / 客户端断线后自动重连
 
@@ -35,6 +41,8 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 │  └────────┘  │                  │  └─────────────┘  │
 └──────────────┘                  └──────────────────┘
 ```
+
+> 📖 **详细架构说明**: [架构文档](wiki/Architecture.md)
 
 ## Protocol / 通信协议
 
@@ -135,12 +143,26 @@ keylog 1
 ## Project Structure / 项目结构
 
 ```text
+GhostLink/
 ├── 后台.py           # Controller - Admin menu & display / 控制端
 ├── 客户端.py         # Agent - Execute commands & send data / 被控端
+├── 启动.bat          # One-click launcher / 一键启动脚本
+├── KillAMSI.cpp      # C++ AMSI bypass utility / AMSI 绕过工具
 ├── README.md         # Documentation / 项目说明
-├── LICENSE           # MIT License
-└── requirements.txt  # Python dependencies / 依赖列表
+├── LICENSE           # MIT License / MIT 许可证
+├── requirements.txt  # Python dependencies / 依赖列表
+├── wiki/             # Detailed documentation / 详细文档
+│   ├── Home.md
+│   ├── Getting-Started.md
+│   ├── User-Guide.md
+│   ├── Protocol-Reference.md
+│   ├── Architecture.md
+│   └── FAQ.md
+└── GhostLink.wiki/   # Mirror wiki for GitHub Pages
+    └── ...
 ```
+
+> 📖 **完整协议参考**: [协议文档](wiki/Protocol-Reference.md)
 
 ## Protocol Details / 协议细节
 
@@ -231,8 +253,28 @@ Server ◄── Client:  "00001234<keylog_text>"     (8字节长度头 + UTF-8 
 | 40 | ADS 数据流 | Alternate Data Streams enumeration |
 | 41-42 | 文件图标 | System icon (Base64-encoded PNG) |
 
-## Author / 作者
+## KillAMSI Utility / AMSI 绕过工具
 
-Elmh
+`KillAMSI.cpp` 是一个独立的 C++ 工具，通过修改注册表禁用 Windows 的 AMSI（Antimalware Scan Interface）脚本扫描功能。
 
-<https://elmh.top/>
+### 编译
+
+```bash
+g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
+```
+
+### 导出函数
+
+| 函数 | 说明 |
+| --- | --- |
+| `KillAmsi()` | 设置 HKCU\...\AmsiEnable=0，返回 0=成功 / 1=失败 |
+
+> 非管理员权限也能写入注册表。
+
+---
+
+## 相关链接
+
+- **完整 Wiki 文档**: [`wiki/`](wiki/) | [`GhostLink.wiki/`](GhostLink.wiki/)
+- **作者**: [Elmh](https://elmh.top/)
+- **许可证**: MIT

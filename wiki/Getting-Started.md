@@ -103,6 +103,24 @@ Shell> 0
 
 ---
 
+---
+
+## 可选：编译 KillAMSI 工具
+
+如果需要禁用目标机器上的 Windows AMSI 脚本扫描（绕过安全软件对 Python 脚本的检测），可编译 `KillAMSI.cpp`：
+
+```bash
+# 使用 GCC (MinGW)
+g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
+
+# 或使用 MSVC
+cl /LD KillAMSI.cpp advapi32.lib
+```
+
+> 详细用法见 [常见问题 - 安全与隐私](FAQ#安全与隐私)。
+
+---
+
 ## 下一步
 
 - 阅读 [用户指南](User-Guide) 了解所有功能的详细用法

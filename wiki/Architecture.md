@@ -209,6 +209,27 @@ if not is_admin():
 
 ---
 
+## 外部工具
+
+### KillAMSI.cpp
+
+位于项目根目录的独立 C++ 工具，通过注册表禁用 Windows AMSI 脚本扫描：
+
+```cpp
+// 设置 HKCU\Software\Microsoft\Windows Script\Settings\AmsiEnable = 0
+RegSetValueEx(hkey, TEXT("AmsiEnable"), ...);
+```
+
+编译方式：
+
+```bash
+g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
+```
+
+编译后可在客户端加载调用，用于绕过 PowerShell/VBScript 等脚本的 AMSI 检测。
+
+---
+
 ## 依赖关系
 
 ```mermaid

@@ -200,6 +200,21 @@ GhostLink 支持同时管理多个客户端：
 请输入命令：camera 3   # 查看第 3 个客户端摄像头
 ```
 
+---
+
+## 进阶：AMSI 绕过
+
+`KillAMSI.cpp` 是一个独立的 C++ 工具，通过修改注册表禁用 Windows AMSI。在需要绕过 PowerShell/VBScript 等脚本检测时使用：
+
+```bash
+# 编译
+g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
+
+# 加载到目标进程后调用 KillAmsi()
+```
+
+> 详细说明见 [常见问题](FAQ#安全与隐私)。
+
 客户端断线后会自动从列表中移除，不影响其他客户端。
 
 ---
