@@ -274,6 +274,37 @@ g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
 
 ---
 
+## KillTaskManager Utility / 任务管理器禁用工具
+
+`KillTaskManager.cpp` 是一个独立的 C++ 工具，通过修改注册表策略禁用 Windows 任务管理器，防止用户通过 `Ctrl+Alt+Del` 或右键任务栏打开。
+
+### 编译
+
+```bash
+g++ -shared -o KillTaskManager.dll KillTaskManager.cpp -ladvapi32
+```
+
+### 导出函数
+
+| 函数 | 说明 |
+| --- | --- |
+| `KillTaskManager()` | 设置 HKCU\...\DisableTaskMgr=1，返回 0=成功 / 1=失败 |
+
+### 一键恢复
+
+运行 `恢复.bat`（需要管理员权限）可重新启用 AMSI 和任务管理器：
+
+```batch
+恢复.bat
+```
+
+该脚本会：
+1. 将 `AmsiEnable` 恢复为 `1`
+2. 将 `DisableTaskMgr` 恢复为 `0`
+3. 自动重启资源管理器使注册表更改立即生效
+
+---
+
 ## 相关链接
 
 - **完整 Wiki 文档**: [`wiki/`](wiki/) | [`GhostLink.wiki/`](GhostLink.wiki/)
