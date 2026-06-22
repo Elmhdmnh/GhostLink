@@ -6,7 +6,7 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 > ⚠️ **Disclaimer / 免责声明**: This project is for security research and educational purposes only. Do not use for unauthorized access. Users must comply with local laws and assume all responsibility.
 > 本项目仅供安全研究和教育用途，请勿用于未经授权的访问。使用者需遵守当地法律法规，自行承担所有责任。
 
-📖 **完整文档**: 见 [wiki](wiki/) 目录或 [GhostLink Wiki](GhostLink.wiki/)
+📖 **完整文档**: 见 [wiki](wiki/) 目录或 [GitHub Wiki](https://github.com/Elmhdmnh/GhostLink/wiki)
 
 ---
 
@@ -143,7 +143,6 @@ keylog 1
 ## Project Structure / 项目结构
 
 ```text
-GhostLink/
 ├── 后台.py           # Controller - Admin menu & display / 控制端
 ├── 客户端.py         # Agent - Execute commands & send data / 被控端
 ├── 启动.bat          # One-click launcher / 一键启动脚本
@@ -151,15 +150,13 @@ GhostLink/
 ├── README.md         # Documentation / 项目说明
 ├── LICENSE           # MIT License / MIT 许可证
 ├── requirements.txt  # Python dependencies / 依赖列表
-├── wiki/             # Detailed documentation / 详细文档
-│   ├── Home.md
-│   ├── Getting-Started.md
-│   ├── User-Guide.md
-│   ├── Protocol-Reference.md
-│   ├── Architecture.md
-│   └── FAQ.md
-└── GhostLink.wiki/   # Mirror wiki for GitHub Pages
-    └── ...
+└── wiki/             # Detailed documentation / 详细文档
+    ├── Home.md
+    ├── Getting-Started.md
+    ├── User-Guide.md
+    ├── Protocol-Reference.md
+    ├── Architecture.md
+    └── FAQ.md
 ```
 
 > 📖 **完整协议参考**: [协议文档](wiki/Protocol-Reference.md)
