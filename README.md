@@ -1,7 +1,7 @@
-# Remote Admin Toolkit (RAT) / 远程管理工具 / 木马病毒
+# GhostLink — 远程管理工具包
 
-A lightweight Python-based remote administration toolkit with Shell command execution, real-time screen monitoring, camera capture, file system management, keylogging, and file upload.
-基于 Python 的轻量级远程管理工具，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录以及文件上传。
+A lightweight Python-based remote administration toolkit (RAT) with Shell command execution, real-time screen monitoring, camera capture, file system management, keylogging, file upload, task manager disable, and AMSI bypass.
+基于 Python 的轻量级远程管理工具包，支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录、文件上传、任务管理器禁用以及 AMSI 绕过。
 
 > ⚠️ **Disclaimer / 免责声明**: This project is for security research and educational purposes only. Do not use for unauthorized access. Users must comply with local laws and assume all responsibility.
 > 本项目仅供安全研究和教育用途，请勿用于未经授权的访问。使用者需遵守当地法律法规，自行承担所有责任。
@@ -22,6 +22,8 @@ A lightweight Python-based remote administration toolkit with Shell command exec
 - **Keylogger / 键盘记录** — Background keystroke capture with pynput, retrievable on demand / 后台静默记录按键（基于 pynput），按需回传
 - **Multi-Client / 多客户端管理** — Manage multiple connected clients, switch by index number / 支持同时连接多个客户端，通过编号切换
 - **AMS Bypass / AMSI 绕过** — C++ utility to disable Windows AMSI via registry (`KillAMSI.cpp`) / C++ 工具通过注册表禁用 Windows AMSI
+- **Kill Task Manager / 禁用任务管理器** — C++ utility to disable Windows Task Manager via registry (`KillTaskManager.cpp`) / C++ 工具通过注册表禁用任务管理器
+- **One-Click Restore / 一键恢复** — Batch script to re-enable AMSI & Task Manager (`恢复.bat`) / 批处理脚本一键恢复 AMSI 和任务管理器
 - **Resizable Window / 可调整窗口** — Monitor windows support free resizing / 监控窗口支持自由缩放
 - **Auto Reconnect / 自动重连** — Client automatically reconnects after disconnection / 客户端断线后自动重连
 
@@ -72,7 +74,7 @@ pip install opencv-python numpy pillow pywin32
 Edit `客户端.py` and set the target IP address:
 
 ```python
-IP, PORT = '192.168.0.103', 4444  # Change to backend server IP / 改为后台服务器地址
+IP, PORT = '192.168.0.102', 4444  # Change to backend server IP / 改为后台服务器地址
 ```
 
 ### 2. Start Backend / 启动后台 (Controller / 控制端)
@@ -146,7 +148,9 @@ keylog 1
 ├── 后台.py           # Controller - Admin menu & display / 控制端
 ├── 客户端.py         # Agent - Execute commands & send data / 被控端
 ├── 启动.bat          # One-click launcher / 一键启动脚本
+├── 恢复.bat          # Restore AMSI & Task Manager / 恢复 AMSI 和任务管理器
 ├── KillAMSI.cpp      # C++ AMSI bypass utility / AMSI 绕过工具
+├── KillTaskManager.cpp # C++ Task Manager disable utility / 任务管理器禁用工具
 ├── README.md         # Documentation / 项目说明
 ├── LICENSE           # MIT License / MIT 许可证
 ├── requirements.txt  # Python dependencies / 依赖列表

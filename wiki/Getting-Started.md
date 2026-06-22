@@ -105,9 +105,11 @@ Shell> 0
 
 ---
 
-## 可选：编译 KillAMSI 工具
+## 可选：编译 C++ 工具
 
-如果需要禁用目标机器上的 Windows AMSI 脚本扫描（绕过安全软件对 Python 脚本的检测），可编译 `KillAMSI.cpp`：
+### KillAMSI — 禁用 AMSI 脚本扫描
+
+编译 `KillAMSI.cpp` 可禁用 Windows AMSI（绕过脚本检测）：
 
 ```bash
 # 使用 GCC (MinGW)
@@ -116,6 +118,22 @@ g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
 # 或使用 MSVC
 cl /LD KillAMSI.cpp advapi32.lib
 ```
+
+### KillTaskManager — 禁用任务管理器
+
+编译 `KillTaskManager.cpp` 可禁用 Windows 任务管理器：
+
+```bash
+# 使用 GCC (MinGW)
+g++ -shared -o KillTaskManager.dll KillTaskManager.cpp -ladvapi32
+
+# 或使用 MSVC
+cl /LD KillTaskManager.cpp advapi32.lib
+```
+
+### 一键恢复
+
+运行 `恢复.bat`（需要管理员权限）可重新启用 AMSI 和任务管理器，并自动重启资源管理器使更改生效。
 
 > 详细用法见 [常见问题 - 安全与隐私](FAQ#安全与隐私)。
 

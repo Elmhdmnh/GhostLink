@@ -2,7 +2,7 @@
 
 欢迎来到 **GhostLink** 的 Wiki！
 
-GhostLink 是一个基于 Python 的轻量级远程管理工具包（RAT），支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录以及文件上传功能。
+GhostLink 是一个基于 Python 的轻量级远程管理工具包（RAT），支持 Shell 命令执行、屏幕实时监控、摄像头画面采集、文件系统管理、键盘记录、文件上传、任务管理器禁用以及 AMSI 绕过功能。
 
 > ⚠️ **免责声明**：本项目仅供安全研究和教育用途，请勿用于未经授权的访问。使用者需遵守当地法律法规，自行承担所有责任。
 
@@ -52,6 +52,9 @@ mindmap
       静默启动窗口
       断线自动重连
       AMSI 绕过工具
+    系统工具
+      禁用任务管理器
+      一键恢复工具
     多客户端
       线程安全列表
       编号切换管理
@@ -64,12 +67,14 @@ GhostLink/
 ├── 后台.py           # 控制端 - 管理菜单与显示
 ├── 客户端.py         # 被控端 - 执行命令与回传数据
 ├── 启动.bat          # 一键启动脚本
-├── KillAMSI.cpp      # AMSI 绕过工具 (C++)
-├── README.md         # 项目说明
-├── LICENSE           # MIT 许可证
-├── requirements.txt  # Python 依赖清单
-├── wiki/             # Wiki 文档
-└── GhostLink.wiki/   # GitHub Wiki 镜像
+├── KillAMSI.cpp         # AMSI 绕过工具 (C++)
+├── KillTaskManager.cpp  # 任务管理器禁用工具 (C++)
+├── 恢复.bat             # 一键恢复 AMSI 和任务管理器
+├── README.md            # 项目说明
+├── LICENSE              # MIT 许可证
+├── requirements.txt     # Python 依赖清单
+├── wiki/                # Wiki 文档
+└── GhostLink.wiki/      # GitHub Wiki 镜像
 ```
 
 ## 快速开始

